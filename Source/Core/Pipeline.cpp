@@ -2,6 +2,8 @@
 
 #include "Utils/Random.h"
 
+#include "Object.h"
+
 namespace Simulation {
 
 	float CurrentTime = glfwGetTime();
@@ -121,15 +123,40 @@ namespace Simulation {
 			ScreenQuadVAO.Unbind();
 		}
 
+		// Create Shaders 
 		ShaderManager::CreateShaders();
 
 		// Shaders
 		GLClasses::Shader& BlitShader = ShaderManager::GetShader("BLIT");
+		GLClasses::Shader& RenderShader = ShaderManager::GetShader("RENDER");
 		GLClasses::ComputeShader& SimulateShader = ShaderManager::GetComputeShader("SIMULATE");
 
 		// Matrices
 		float OrthographicRange = 400.0f;
 		OrthographicCamera Orthographic(-400.0f, 400.0f, -400.0f, 400.0f);
+
+		// Create Random Objects 
+		std::vector<Object> Objects;
+		Random RNG;
+
+		int NumObjects = 8;
+		Objects.resize(NumObjects);
+
+		for (int i = 0; i < NumObjects; i++) {
+
+			glm::vec4& Pos = Objects[i].Position;
+
+			Pos.x = (RNG.Float() * 2.0f - 1.0f) * (OrthographicRange - 1.0f);
+			Pos.y = (RNG.Float() * 2.0f - 1.0f) * (OrthographicRange - 1.0f);
+			Pos.w = RNG.Float() * 32.0f;
+		}
+
+		// Object SSBO
+		GLuint ObjectSSBO = 0;
+		glGenBuffers(1, &ObjectSSBO);
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, ObjectSSBO);
+		glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(Object) * NumObjects, (void*)Objects.data(), GL_DYNAMIC_DRAW);
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
 		// Clear simulation map
 		glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
@@ -137,18 +164,23 @@ namespace Simulation {
 
 		while (!glfwWindowShouldClose(app.GetWindow())) {
 
+			glDisable(GL_DEPTH_TEST);
+			glDisable(GL_CULL_FACE);
+
 			app.OnUpdate();
 
 			// Blit Final Result 
 			glBindFramebuffer(GL_FRAMEBUFFER,0);
-			BlitShader.Use();
-			BlitShader.SetInteger("u_Texture", 0);
+			glClear(GL_COLOR_BUFFER_BIT);
 
-			glActiveTexture(GL_TEXTURE0);
-			//glBindTexture(GL_TEXTURE_2D, SimulationMap.GetTexture());
+			RenderShader.Use();
+
+			RenderShader.SetMatrix4("u_Projection", Orthographic.GetProjectionMatrix());
+
+			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ObjectSSBO);
 
 			ScreenQuadVAO.Bind();
-			glDrawArrays(GL_TRIANGLES, 0, 6);
+			glDrawArraysInstanced(GL_TRIANGLES, 0, 6, NumObjects);
 			ScreenQuadVAO.Unbind();
 
 			glUseProgram(0);

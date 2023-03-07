@@ -165,6 +165,7 @@
     <ClInclude Include="Core\GLClasses\TextureArray.h" />
     <ClInclude Include="Core\GLClasses\VertexArray.h" />
     <ClInclude Include="Core\GLClasses\VertexBuffer.h" />
+    <ClInclude Include="Core\Object.h" />
     <ClInclude Include="Core\Orthographic.h" />
     <ClInclude Include="Core\Pipeline.h" />
     <ClInclude Include="Core\ShaderManager.h" />
@@ -233,6 +234,8 @@
   <ItemGroup>
     <None Include="Core\Shaders\Blit.glsl" />
     <None Include="Core\Shaders\FBOVert.glsl" />
+    <None Include="Core\Shaders\RenderFragment.glsl" />
+    <None Include="Core\Shaders\RenderVertex.glsl" />
     <None Include="Core\Shaders\Simulate.glsl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
