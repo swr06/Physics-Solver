@@ -10,6 +10,8 @@ namespace Simulation {
 	float Frametime = 0.0f;
 	float DeltaTime = 0.0f;
 
+	std::vector<Object> Objects;
+
 	class RayTracerApp : public Simulation::Application
 	{
 	public:
@@ -49,11 +51,9 @@ namespace Simulation {
 		{
 			ImGuiIO& io = ImGui::GetIO();
 
-			if (e.type == Simulation::EventTypes::MousePress && !ImGui::GetIO().WantCaptureMouse)
+			if (e.type == Simulation::EventTypes::MousePress && !ImGui::GetIO().WantCaptureMouse && GetCurrentFrame() > 32)
 			{
-				if (!this->GetCursorLocked()) {
 
-				}
 			}
 
 			if (e.type == Simulation::EventTypes::MouseMove && GetCursorLocked())
@@ -136,26 +136,37 @@ namespace Simulation {
 		OrthographicCamera Orthographic(-400.0f, 400.0f, -400.0f, 400.0f);
 
 		// Create Random Objects 
-		std::vector<Object> Objects;
 		Random RNG;
 
-		int NumObjects = 8;
-		Objects.resize(NumObjects);
+		int ObjectCount = 100000;
+		Objects.resize(ObjectCount);
 
-		for (int i = 0; i < NumObjects; i++) {
+		//Objects[0].Position = glm::vec4(0.0f, 0.0f, 0.0f, 32.0f);
+		//Objects[0].Velocity = glm::vec4(0.0f);
+		//Objects[0].Acceleration = glm::vec4(0.0f);
 
+		for (int i = 0; i < ObjectCount; i++) {
+		
 			glm::vec4& Pos = Objects[i].Position;
+		
+			do {
+				Pos.x = (RNG.Float() * 2.0f - 1.0f) * (OrthographicRange - 1.0f);
+				Pos.y = (RNG.Float() * 2.0f - 1.0f) * (OrthographicRange - 1.0f);
+			}
 
-			Pos.x = (RNG.Float() * 2.0f - 1.0f) * (OrthographicRange - 1.0f);
-			Pos.y = (RNG.Float() * 2.0f - 1.0f) * (OrthographicRange - 1.0f);
+			while (glm::distance(glm::vec2(Pos), glm::vec2(0.0f)) > 200.0f);
+			
 			Pos.w = RNG.Float() * 32.0f;
+		
+			Objects[i].Velocity = glm::vec4(0.0f);
+			Objects[i].Acceleration = glm::vec4(0.0f);
 		}
 
 		// Object SSBO
 		GLuint ObjectSSBO = 0;
 		glGenBuffers(1, &ObjectSSBO);
 		glBindBuffer(GL_SHADER_STORAGE_BUFFER, ObjectSSBO);
-		glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(Object) * NumObjects, (void*)Objects.data(), GL_DYNAMIC_DRAW);
+		glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(Object) * ObjectCount, (void*)Objects.data(), GL_DYNAMIC_DRAW);
 		glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
 		// Clear simulation map
@@ -169,18 +180,32 @@ namespace Simulation {
 
 			app.OnUpdate();
 
+			if (app.GetCurrentFrame() > 16) {
+				// Simulate 
+				SimulateShader.Use();
+				SimulateShader.SetFloat("u_Dt", DeltaTime);
+				SimulateShader.SetFloat("u_Time", glfwGetTime());
+				SimulateShader.SetInteger("u_ObjectCount", ObjectCount);
+
+				glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ObjectSSBO);
+				glDispatchCompute((ObjectCount / 16) + 2, 1, 1);
+			}
+
 			// Blit Final Result 
 			glBindFramebuffer(GL_FRAMEBUFFER,0);
+			glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 			glClear(GL_COLOR_BUFFER_BIT);
 
 			RenderShader.Use();
 
 			RenderShader.SetMatrix4("u_Projection", Orthographic.GetProjectionMatrix());
+			RenderShader.SetVector2f("u_Dimensions", glm::vec2(app.GetWidth(), app.GetHeight()));
+			RenderShader.SetVector2f("u_Dims", glm::vec2(app.GetWidth(), app.GetHeight()));
 
 			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ObjectSSBO);
 
 			ScreenQuadVAO.Bind();
-			glDrawArraysInstanced(GL_TRIANGLES, 0, 6, NumObjects);
+			glDrawArraysInstanced(GL_TRIANGLES, 0, 6, ObjectCount);
 			ScreenQuadVAO.Unbind();
 
 			glUseProgram(0);

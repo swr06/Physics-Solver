@@ -7,6 +7,17 @@ layout(rgba16f, binding = 0) uniform image2D o_OutputData;
 
 uniform float u_Dt;
 uniform float u_Time;
+uniform int u_ObjectCount;
+
+struct Object {
+	vec4 Position; // w component has radius 
+	vec4 Velocity; 
+	vec4 Acceleration;
+};
+
+layout (std430, binding = 0) buffer ObjectSSBO {
+	Object SimulationObjects[];
+};
 
 float remap(float x, float a, float b, float c, float d)
 {
@@ -22,4 +33,29 @@ vec2 hash2()
 void main() {
 
 	int Index = int(gl_GlobalInvocationID.x);
+
+	if (Index > u_ObjectCount) {
+		return;
+	}
+
+	float dt = u_Dt;
+
+	Object CurrentObject = SimulationObjects[Index];
+	Object Unupdated = SimulationObjects[Index];
+
+	// s = s0 + ut + 1/2at^2
+	CurrentObject.Position.xyz = CurrentObject.Position.xyz + CurrentObject.Velocity.xyz * dt + CurrentObject.Acceleration.xyz * dt * dt;
+	CurrentObject.Acceleration = vec4(0.0f, -9.8f, 0.0f, 0.0f) * 400.0f;
+	CurrentObject.Velocity.xyz = (CurrentObject.Position.xyz - Unupdated.Position.xyz) / dt;
+
+	vec3 ToObject = CurrentObject.Position.xyz - vec3(0.0f);
+	float Length = length(ToObject);
+	vec3 Normal = ToObject / Length;
+
+	if (Length > 350 - CurrentObject.Position.w) {
+		//CurrentObject.Velocity.xyz = -Normal * (Length - CurrentObject.Position.w);
+		CurrentObject.Velocity.xyz += -Normal * (Length - CurrentObject.Position.w);
+	}
+
+	SimulationObjects[Index] = CurrentObject;
 }
