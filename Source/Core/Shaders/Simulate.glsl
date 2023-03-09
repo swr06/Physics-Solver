@@ -32,7 +32,7 @@ vec2 hash2()
 }
 
 void ApplyConstraint(inout Object object) {
-	float CoefficientOfRestitution = 0.9f;
+	float CoefficientOfRestitution = 1.0f;
 	vec2 ToObject = object.Position.xy - vec2(0.0f);
 	float Length = length(ToObject);
 	vec2 Normal = ToObject / Length;
@@ -41,8 +41,8 @@ void ApplyConstraint(inout Object object) {
 
 	if (Length > ConstrainingRadius) {
 		vec2 RelativeVelocity = object.Velocity - vec2(0.0f); // The constraining sphere remains at rest 
-		object.Position.xy -= -Normal * (ConstrainingRadius - Length);
-		object.Velocity.xy += -Normal * max(dot(Normal, RelativeVelocity) * CoefficientOfRestitution, 0.0f); // impulse only depends on velocity 
+		object.Position.xy -= -Normal * (ConstrainingRadius - Length); // constrain position 
+		object.Velocity.xy += -Normal * max(dot(Normal, RelativeVelocity) * CoefficientOfRestitution * min((1.0f / object.MassRadius.x), 1.0f), 0.0f); // impulse only depends on velocity along the normal
 	}
 
 }

@@ -157,7 +157,7 @@ namespace Simulation {
 			while (glm::distance(glm::vec2(Pos), glm::vec2(0.0f)) > 250.0f);
 			
 			float r = RNG.Float() * 32.0f;
-			Objects[i].MassRadius = glm::vec2(r * 2.0f, r);
+			Objects[i].MassRadius = glm::vec2(r, r);
 			Objects[i].Velocity = glm::vec2(0.0f);
 			Objects[i].Force = glm::vec2(0.0f);
 		}
