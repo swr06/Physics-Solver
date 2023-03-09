@@ -12,9 +12,10 @@ uniform mat4 u_Projection;
 uniform vec2 u_Dimensions;
 
 struct Object {
-	vec4 Position; // w component has radius 
-	vec4 Velocity; 
-	vec4 Acceleration;
+	vec2 Position;
+	vec2 Velocity; 
+	vec2 Force;
+	vec2 MassRadius;
 };
 
 layout (std430, binding = 0) buffer ObjectSSBO {
@@ -46,16 +47,17 @@ void main()
 
     // SRT Order of transformations 
     vec4 FinalPosition = vec4(a_Position, 0.0f, 1.0f);
-    vec4 Position = SimulationObjects[gl_InstanceID].Position;
-    mat4 TranslateMatrix = Translate(Position.xyz);
-    mat4 ScaleMatrix = Scale(vec3(Position.w * Aspect, Position.w, Position.w));
+    vec2 Position = SimulationObjects[gl_InstanceID].Position;
+    vec2 MassRadius = SimulationObjects[gl_InstanceID].MassRadius;
+    mat4 TranslateMatrix = Translate(vec3(Position.xy, 0.0f));
+    mat4 ScaleMatrix = Scale(vec3(MassRadius.y * Aspect, MassRadius.y, MassRadius.y));
 
     FinalPosition = ScaleMatrix * FinalPosition;
     FinalPosition = TranslateMatrix * FinalPosition;
     
     // Set outs 
-    v_Radius = Position.w;
-    v_RawPosition = Position.xyz;
+    v_Radius = MassRadius.y;
+    v_RawPosition = vec3(Position.xy, 0.0f);
 	v_TexCoords = a_TexCoords;
     v_Position = FinalPosition.xyz;
 

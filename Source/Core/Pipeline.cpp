@@ -138,7 +138,7 @@ namespace Simulation {
 		// Create Random Objects 
 		Random RNG;
 
-		int ObjectCount = 100000;
+		int ObjectCount = 4;
 		Objects.resize(ObjectCount);
 
 		//Objects[0].Position = glm::vec4(0.0f, 0.0f, 0.0f, 32.0f);
@@ -147,19 +147,19 @@ namespace Simulation {
 
 		for (int i = 0; i < ObjectCount; i++) {
 		
-			glm::vec4& Pos = Objects[i].Position;
+			glm::vec2& Pos = Objects[i].Position;
 		
 			do {
 				Pos.x = (RNG.Float() * 2.0f - 1.0f) * (OrthographicRange - 1.0f);
 				Pos.y = (RNG.Float() * 2.0f - 1.0f) * (OrthographicRange - 1.0f);
 			}
 
-			while (glm::distance(glm::vec2(Pos), glm::vec2(0.0f)) > 200.0f);
+			while (glm::distance(glm::vec2(Pos), glm::vec2(0.0f)) > 250.0f);
 			
-			Pos.w = RNG.Float() * 32.0f;
-		
-			Objects[i].Velocity = glm::vec4(0.0f);
-			Objects[i].Acceleration = glm::vec4(0.0f);
+			float r = RNG.Float() * 32.0f;
+			Objects[i].MassRadius = glm::vec2(r * 2.0f, r);
+			Objects[i].Velocity = glm::vec2(0.0f);
+			Objects[i].Force = glm::vec2(0.0f);
 		}
 
 		// Object SSBO

@@ -10,9 +10,10 @@ uniform float u_Time;
 uniform int u_ObjectCount;
 
 struct Object {
-	vec4 Position; // w component has radius 
-	vec4 Velocity; 
-	vec4 Acceleration;
+	vec2 Position;
+	vec2 Velocity; 
+	vec2 Force;
+	vec2 MassRadius;
 };
 
 layout (std430, binding = 0) buffer ObjectSSBO {
@@ -30,6 +31,8 @@ vec2 hash2()
 	return fract(sin(vec2(HASH2SEED += 0.1, HASH2SEED += 0.1)) * vec2(43758.5453123, 22578.1459123));
 }
 
+const vec2 G = vec2(0.0f, -9.8f) * 400.0f;
+
 void main() {
 
 	int Index = int(gl_GlobalInvocationID.x);
@@ -42,19 +45,20 @@ void main() {
 
 	Object CurrentObject = SimulationObjects[Index];
 	Object Unupdated = SimulationObjects[Index];
+	
+	CurrentObject.Force += CurrentObject.MassRadius.x * G;
+	CurrentObject.Velocity += (CurrentObject.Force / CurrentObject.MassRadius.x) * dt;
+	CurrentObject.Position += CurrentObject.Velocity * dt;
+	CurrentObject.Force = vec2(0.0f);
 
-	// s = s0 + ut + 1/2at^2
-	CurrentObject.Position.xyz = CurrentObject.Position.xyz + CurrentObject.Velocity.xyz * dt + CurrentObject.Acceleration.xyz * dt * dt;
-	CurrentObject.Acceleration = vec4(0.0f, -9.8f, 0.0f, 0.0f) * 400.0f;
-	CurrentObject.Velocity.xyz = (CurrentObject.Position.xyz - Unupdated.Position.xyz) / dt;
-
-	vec3 ToObject = CurrentObject.Position.xyz - vec3(0.0f);
+	vec2 ToObject = CurrentObject.Position.xy - vec2(0.0f);
 	float Length = length(ToObject);
-	vec3 Normal = ToObject / Length;
+	vec2 Normal = ToObject / Length;
 
-	if (Length > 350 - CurrentObject.Position.w) {
-		//CurrentObject.Velocity.xyz = -Normal * (Length - CurrentObject.Position.w);
-		CurrentObject.Velocity.xyz += -Normal * (Length - CurrentObject.Position.w);
+	float ConstrainingRadius = 350.0f - CurrentObject.MassRadius.y;
+
+	if (Length > ConstrainingRadius) {
+		CurrentObject.Position.xy -= -Normal * (ConstrainingRadius - Length);
 	}
 
 	SimulationObjects[Index] = CurrentObject;

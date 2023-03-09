@@ -4,7 +4,8 @@
 #include <glm/glm.hpp>
 
 struct Object {
-	glm::vec4 Position; // w component has radius 
-	glm::vec4 Velocity; 
-	glm::vec4 Acceleration;
+	glm::vec2 Position;
+	glm::vec2 Velocity; 
+	glm::vec2 Force;
+	glm::vec2 MassRadius;
 };
