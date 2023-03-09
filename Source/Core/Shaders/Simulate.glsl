@@ -31,6 +31,22 @@ vec2 hash2()
 	return fract(sin(vec2(HASH2SEED += 0.1, HASH2SEED += 0.1)) * vec2(43758.5453123, 22578.1459123));
 }
 
+void ApplyConstraint(inout Object object) {
+	float CoefficientOfRestitution = 0.9f;
+	vec2 ToObject = object.Position.xy - vec2(0.0f);
+	float Length = length(ToObject);
+	vec2 Normal = ToObject / Length;
+
+	float ConstrainingRadius = 350.0f - object.MassRadius.y;
+
+	if (Length > ConstrainingRadius) {
+		vec2 RelativeVelocity = object.Velocity - vec2(0.0f); // The constraining sphere remains at rest 
+		object.Position.xy -= -Normal * (ConstrainingRadius - Length);
+		object.Velocity.xy += -Normal * max(dot(Normal, RelativeVelocity) * CoefficientOfRestitution, 0.0f); // impulse only depends on velocity 
+	}
+
+}
+
 const vec2 G = vec2(0.0f, -9.8f) * 400.0f;
 
 void main() {
@@ -50,16 +66,8 @@ void main() {
 	CurrentObject.Velocity += (CurrentObject.Force / CurrentObject.MassRadius.x) * dt;
 	CurrentObject.Position += CurrentObject.Velocity * dt;
 	CurrentObject.Force = vec2(0.0f);
-
-	vec2 ToObject = CurrentObject.Position.xy - vec2(0.0f);
-	float Length = length(ToObject);
-	vec2 Normal = ToObject / Length;
-
-	float ConstrainingRadius = 350.0f - CurrentObject.MassRadius.y;
-
-	if (Length > ConstrainingRadius) {
-		CurrentObject.Position.xy -= -Normal * (ConstrainingRadius - Length);
-	}
+	
+	ApplyConstraint(CurrentObject);
 
 	SimulationObjects[Index] = CurrentObject;
 }

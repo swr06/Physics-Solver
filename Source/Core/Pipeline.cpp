@@ -138,7 +138,7 @@ namespace Simulation {
 		// Create Random Objects 
 		Random RNG;
 
-		int ObjectCount = 4;
+		int ObjectCount = 32;
 		Objects.resize(ObjectCount);
 
 		//Objects[0].Position = glm::vec4(0.0f, 0.0f, 0.0f, 32.0f);
