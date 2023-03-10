@@ -32,7 +32,7 @@ vec2 hash2()
 }
 
 void Collide(int index, inout Object object, float mult) {
-	float CoefficientOfRestitution = 0.7f;
+	float CoefficientOfRestitution = 1.0f;
 
 	for (int i = 0 ; i < u_ObjectCount ; i++) {
 
@@ -49,14 +49,18 @@ void Collide(int index, inout Object object, float mult) {
 
 		if (Length < ConstrainingRadius) {
 			vec2 RelativeVelocity = object.Velocity - SimulationObjects[i].Velocity.xy; // The constraining sphere remains at rest 
-			vec2 Delta = -Normal * (ConstrainingRadius - Length) * 1. * 0.5f * mult;
-			vec2 Impulse = -Normal * max(dot(Normal, RelativeVelocity) * CoefficientOfRestitution * mult * 1.0f, 0.0f);
+			vec2 Delta = -Normal * (ConstrainingRadius - Length) * 0.5f * mult;
+
+			// Calculate impulse 
+			float ImpluseM = max(dot(Normal, RelativeVelocity) * CoefficientOfRestitution * mult * 1.0f, 0.0f);
+			ImpluseM /= (1.0f / object.MassRadius.x) + (1.0f / SimulationObjects[i].MassRadius.x);
+			vec2 Impulse = -Normal * ImpluseM;
 
 			object.Position.xy -= Delta; // constrain position 
 			SimulationObjects[i].Position.xy += Delta; // constrain position 
 
-			object.Velocity.xy += Impulse;
-			SimulationObjects[i].Velocity.xy -= Impulse;
+			object.Velocity.xy += Impulse / object.MassRadius.x;
+			SimulationObjects[i].Velocity.xy += Impulse / SimulationObjects[i].MassRadius.x;
 		}
 	}
 }
