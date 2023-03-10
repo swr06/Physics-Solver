@@ -31,7 +31,37 @@ vec2 hash2()
 	return fract(sin(vec2(HASH2SEED += 0.1, HASH2SEED += 0.1)) * vec2(43758.5453123, 22578.1459123));
 }
 
-void ApplyConstraint(inout Object object) {
+void Collide(int index, inout Object object, float mult) {
+	float CoefficientOfRestitution = 0.7f;
+
+	for (int i = 0 ; i < u_ObjectCount ; i++) {
+
+		if (i == index) {
+			continue;
+		}
+
+		vec2 ToObject = object.Position.xy - SimulationObjects[i].Position.xy;
+		float Length = length(ToObject);
+		vec2 Normal = ToObject / Length;
+
+		//float ConstrainingRadius = max(SimulationObjects[i].MassRadius.y, object.MassRadius.y);
+		float ConstrainingRadius = max(SimulationObjects[i].MassRadius.y + object.MassRadius.y, 0.);
+
+		if (Length < ConstrainingRadius) {
+			vec2 RelativeVelocity = object.Velocity - SimulationObjects[i].Velocity.xy; // The constraining sphere remains at rest 
+			vec2 Delta = -Normal * (ConstrainingRadius - Length) * 1. * 0.5f * mult;
+			vec2 Impulse = -Normal * max(dot(Normal, RelativeVelocity) * CoefficientOfRestitution * mult * 1.0f, 0.0f);
+
+			object.Position.xy -= Delta; // constrain position 
+			SimulationObjects[i].Position.xy += Delta; // constrain position 
+
+			object.Velocity.xy += Impulse;
+			SimulationObjects[i].Velocity.xy -= Impulse;
+		}
+	}
+}
+
+void ApplyConstraint(inout Object object, float mult) {
 	float CoefficientOfRestitution = 1.0f;
 	vec2 ToObject = object.Position.xy - vec2(0.0f);
 	float Length = length(ToObject);
@@ -41,8 +71,8 @@ void ApplyConstraint(inout Object object) {
 
 	if (Length > ConstrainingRadius) {
 		vec2 RelativeVelocity = object.Velocity - vec2(0.0f); // The constraining sphere remains at rest 
-		object.Position.xy -= -Normal * (ConstrainingRadius - Length); // constrain position 
-		object.Velocity.xy += -Normal * max(dot(Normal, RelativeVelocity) * CoefficientOfRestitution * min((1.0f / object.MassRadius.x), 1.0f), 0.0f); // impulse only depends on velocity along the normal
+		object.Position.xy -= -Normal * (ConstrainingRadius - Length) * mult; // constrain position 
+		object.Velocity.xy += -Normal * max(mult * dot(Normal, RelativeVelocity) * CoefficientOfRestitution * min((1.0f / object.MassRadius.x), 1.0f), 0.0f); // impulse only depends on velocity along the normal
 	}
 
 }
@@ -57,17 +87,33 @@ void main() {
 		return;
 	}
 
-	float dt = u_Dt;
+	int Substeps = 4;
+	float dt = u_Dt / float(Substeps);
+	float mult = 1.0f / float(Substeps);
 
-	Object CurrentObject = SimulationObjects[Index];
-	Object Unupdated = SimulationObjects[Index];
-	
-	CurrentObject.Force += CurrentObject.MassRadius.x * G;
-	CurrentObject.Velocity += (CurrentObject.Force / CurrentObject.MassRadius.x) * dt;
-	CurrentObject.Position += CurrentObject.Velocity * dt;
-	CurrentObject.Force = vec2(0.0f);
-	
-	ApplyConstraint(CurrentObject);
+	for (int i = 0 ; i < Substeps; i++) {
 
-	SimulationObjects[Index] = CurrentObject;
+		Object CurrentObject = SimulationObjects[Index];
+		Object Unupdated = SimulationObjects[Index];
+	
+		CurrentObject.Force += CurrentObject.MassRadius.x * G;
+
+		vec2 OldVel = CurrentObject.Velocity;
+		CurrentObject.Velocity += (CurrentObject.Force / CurrentObject.MassRadius.x) * dt;
+
+		// Average velocty is more accurate 
+		CurrentObject.Position += ((CurrentObject.Velocity + OldVel) * 0.5f) * dt;
+		CurrentObject.Force = vec2(0.0f);
+	
+		ApplyConstraint(CurrentObject, mult);
+		Collide(Index, CurrentObject, mult);
+		SimulationObjects[Index] = CurrentObject;
+
+		//for (int i = 0 ; i < u_ObjectCount ; i++) {
+		//	Collide(i, SimulationObjects[i]);
+		//}
+
+	}
+
+	
 }

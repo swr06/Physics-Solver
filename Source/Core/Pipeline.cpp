@@ -88,6 +88,12 @@ namespace Simulation {
 				Simulation::ShaderManager::ForceRecompileShaders();
 			}
 
+			if (e.type == Simulation::EventTypes::KeyPress && e.key == GLFW_KEY_V && this->GetCurrentFrame() > 5)
+			{
+				vsync = !vsync;
+			}
+
+
 
 		}
 
@@ -138,7 +144,7 @@ namespace Simulation {
 		// Create Random Objects 
 		Random RNG;
 
-		int ObjectCount = 32;
+		int ObjectCount = 4;
 		Objects.resize(ObjectCount);
 
 		//Objects[0].Position = glm::vec4(0.0f, 0.0f, 0.0f, 32.0f);
@@ -156,7 +162,7 @@ namespace Simulation {
 
 			while (glm::distance(glm::vec2(Pos), glm::vec2(0.0f)) > 250.0f);
 			
-			float r = RNG.Float() * 32.0f;
+			float r = (RNG.Float() * 24.0f) + 8.;
 			Objects[i].MassRadius = glm::vec2(r, r);
 			Objects[i].Velocity = glm::vec2(0.0f);
 			Objects[i].Force = glm::vec2(0.0f);
