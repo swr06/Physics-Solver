@@ -274,5 +274,8 @@
     <None Include="Core\Shaders\RenderVertex.glsl">
       <Filter>Source Files\Simulation\Shaders</Filter>
     </None>
+    <None Include="Core\Shaders\Collide.glsl">
+      <Filter>Source Files\Simulation\Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

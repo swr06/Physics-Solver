@@ -57,10 +57,10 @@ void Collide(int index, inout Object object, float mult) {
 			vec2 Impulse = -Normal * ImpluseM;
 
 			object.Position.xy -= Delta; // constrain position 
-			SimulationObjects[i].Position.xy += Delta; // constrain position 
+			//SimulationObjects[i].Position.xy += Delta; // constrain position 
 
-			object.Velocity.xy += Impulse / object.MassRadius.x;
-			SimulationObjects[i].Velocity.xy += Impulse / SimulationObjects[i].MassRadius.x;
+			//object.Velocity.xy += Impulse / object.MassRadius.x;
+			//SimulationObjects[i].Velocity.xy += Impulse / SimulationObjects[i].MassRadius.x;
 		}
 	}
 }
@@ -91,26 +91,16 @@ void main() {
 		return;
 	}
 
-	int Substeps = 1;
+	int Substeps = 8;
 	float dt = u_Dt / float(Substeps);
 	float mult = 1.0f / float(Substeps);
 
 	for (int i = 0 ; i < Substeps; i++) {
 
 		Object CurrentObject = SimulationObjects[Index];
-		Object Unupdated = SimulationObjects[Index];
 	
-		CurrentObject.Force += CurrentObject.MassRadius.x * G;
-
-		vec2 OldVel = CurrentObject.Velocity;
-		CurrentObject.Velocity += (CurrentObject.Force / CurrentObject.MassRadius.x) * dt;
-
-		// Average velocty is more accurate 
-		CurrentObject.Position += ((CurrentObject.Velocity + OldVel) * 0.5f) * dt;
-		CurrentObject.Force = vec2(0.0f);
-	
-		//ApplyConstraint(CurrentObject, mult);
-		//Collide(Index, CurrentObject, mult);
+		ApplyConstraint(CurrentObject, mult);
+		Collide(Index, CurrentObject, mult);
 		SimulationObjects[Index] = CurrentObject;
 
 		//for (int i = 0 ; i < u_ObjectCount ; i++) {

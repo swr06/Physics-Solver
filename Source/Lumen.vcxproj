@@ -233,6 +233,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Core\Shaders\Blit.glsl" />
+    <None Include="Core\Shaders\Collide.glsl" />
     <None Include="Core\Shaders\FBOVert.glsl" />
     <None Include="Core\Shaders\RenderFragment.glsl" />
     <None Include="Core\Shaders\RenderVertex.glsl" />

@@ -136,6 +136,7 @@ namespace Simulation {
 		GLClasses::Shader& BlitShader = ShaderManager::GetShader("BLIT");
 		GLClasses::Shader& RenderShader = ShaderManager::GetShader("RENDER");
 		GLClasses::ComputeShader& SimulateShader = ShaderManager::GetComputeShader("SIMULATE");
+		GLClasses::ComputeShader& CollisionShader = ShaderManager::GetComputeShader("COLLIDE");
 
 		// Matrices
 		float OrthographicRange = 400.0f;
@@ -195,6 +196,19 @@ namespace Simulation {
 
 				glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ObjectSSBO);
 				glDispatchCompute((ObjectCount / 16) + 2, 1, 1);
+				glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+				glFinish();
+
+				// Collide 
+				CollisionShader.Use();
+				CollisionShader.SetFloat("u_Dt", DeltaTime);
+				CollisionShader.SetFloat("u_Time", glfwGetTime());
+				CollisionShader.SetInteger("u_ObjectCount", ObjectCount);
+
+				glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ObjectSSBO);
+				glDispatchCompute((ObjectCount / 16) + 2, 1, 1);
+				glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+				glFinish();
 			}
 
 			// Blit Final Result 
