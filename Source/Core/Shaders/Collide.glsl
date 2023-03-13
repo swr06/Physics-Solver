@@ -14,6 +14,8 @@ struct Object {
 	vec2 Velocity; 
 	vec2 Force;
 	vec2 MassRadius;
+	vec2 Dx;
+    vec2 Dv;
 };
 
 layout (std430, binding = 0) buffer ObjectSSBO {
@@ -49,24 +51,24 @@ void Collide(int index, inout Object object, float mult) {
 
 		if (Length < ConstrainingRadius) {
 			vec2 RelativeVelocity = object.Velocity - SimulationObjects[i].Velocity.xy; // The constraining sphere remains at rest 
-			vec2 Delta = -Normal * (ConstrainingRadius - Length) * 0.5f * mult;
+			vec2 Delta = -Normal * (ConstrainingRadius - Length) * 0.5f * mult; // Move by half the distance 
 
 			// Calculate impulse 
 			float ImpluseM = max(dot(Normal, RelativeVelocity) * CoefficientOfRestitution * mult * 1.0f, 0.0f);
 			ImpluseM /= (1.0f / object.MassRadius.x) + (1.0f / SimulationObjects[i].MassRadius.x);
 			vec2 Impulse = -Normal * ImpluseM;
 
-			object.Position.xy -= Delta; // constrain position 
-			//SimulationObjects[i].Position.xy += Delta; // constrain position 
+			object.Dx.xy -= Delta; // constrain position 
+			SimulationObjects[i].Dx.xy += Delta; // constrain position 
 
-			//object.Velocity.xy += Impulse / object.MassRadius.x;
-			//SimulationObjects[i].Velocity.xy += Impulse / SimulationObjects[i].MassRadius.x;
+			//object.Dv.xy += Impulse / object.MassRadius.x;
+			//SimulationObjects[i].Dv.xy += Impulse / SimulationObjects[i].MassRadius.x;
 		}
 	}
 }
 
 void ApplyConstraint(inout Object object, float mult) {
-	float CoefficientOfRestitution = 1.0f;
+	float CoefficientOfRestitution = 0.1f;
 	vec2 ToObject = object.Position.xy - vec2(0.0f);
 	float Length = length(ToObject);
 	vec2 Normal = ToObject / Length;
@@ -75,8 +77,8 @@ void ApplyConstraint(inout Object object, float mult) {
 
 	if (Length > ConstrainingRadius) {
 		vec2 RelativeVelocity = object.Velocity - vec2(0.0f); // The constraining sphere remains at rest 
-		object.Position.xy -= -Normal * (ConstrainingRadius - Length) * mult; // constrain position 
-		object.Velocity.xy += -Normal * max(mult * dot(Normal, RelativeVelocity) * CoefficientOfRestitution * min((1.0f / object.MassRadius.x), 1.0f), 0.0f); // impulse only depends on velocity along the normal
+		object.Dx.xy -= -Normal * (ConstrainingRadius - Length) * mult; // constrain position 
+		object.Dv.xy += -Normal * max(mult * dot(Normal, RelativeVelocity) * CoefficientOfRestitution , 0.0f); // impulse only depends on velocity along the normal
 	}
 
 }
@@ -91,7 +93,7 @@ void main() {
 		return;
 	}
 
-	int Substeps = 8;
+	int Substeps = 16;
 	float dt = u_Dt / float(Substeps);
 	float mult = 1.0f / float(Substeps);
 

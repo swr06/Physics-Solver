@@ -164,7 +164,7 @@ namespace Simulation {
 			while (glm::distance(glm::vec2(Pos), glm::vec2(0.0f)) > 250.0f);
 			
 			float r = (RNG.Float() * 24.0f) + 8.;
-			Objects[i].MassRadius = glm::vec2(10.0f, r);
+			Objects[i].MassRadius = glm::vec2(10.0f, 32.0f);
 			Objects[i].Velocity = glm::vec2(0.0f);
 			Objects[i].Force = glm::vec2(0.0f);
 		}
@@ -195,7 +195,7 @@ namespace Simulation {
 				SimulateShader.SetInteger("u_ObjectCount", ObjectCount);
 
 				glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ObjectSSBO);
-				glDispatchCompute((ObjectCount / 16) + 2, 1, 1);
+				glDispatchCompute((ObjectCount / 16) + 1, 1, 1);
 				glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 				glFinish();
 
@@ -206,7 +206,7 @@ namespace Simulation {
 				CollisionShader.SetInteger("u_ObjectCount", ObjectCount);
 
 				glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ObjectSSBO);
-				glDispatchCompute((ObjectCount / 16) + 2, 1, 1);
+				glDispatchCompute((ObjectCount / 16) + 1, 1, 1);
 				glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 				glFinish();
 			}
@@ -227,6 +227,9 @@ namespace Simulation {
 			ScreenQuadVAO.Bind();
 			glDrawArraysInstanced(GL_TRIANGLES, 0, 6, ObjectCount);
 			ScreenQuadVAO.Unbind();
+
+			glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+			glFinish();
 
 			glUseProgram(0);
 

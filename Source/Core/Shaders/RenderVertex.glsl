@@ -16,6 +16,8 @@ struct Object {
 	vec2 Velocity; 
 	vec2 Force;
 	vec2 MassRadius;
+    vec2 Dx;
+    vec2 Dv;
 };
 
 layout (std430, binding = 0) buffer ObjectSSBO {

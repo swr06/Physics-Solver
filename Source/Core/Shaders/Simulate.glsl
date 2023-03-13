@@ -14,6 +14,8 @@ struct Object {
 	vec2 Velocity; 
 	vec2 Force;
 	vec2 MassRadius;
+	vec2 Dx;
+    vec2 Dv;
 };
 
 layout (std430, binding = 0) buffer ObjectSSBO {
@@ -56,11 +58,11 @@ void Collide(int index, inout Object object, float mult) {
 			ImpluseM /= (1.0f / object.MassRadius.x) + (1.0f / SimulationObjects[i].MassRadius.x);
 			vec2 Impulse = -Normal * ImpluseM;
 
-			object.Position.xy -= Delta; // constrain position 
-			SimulationObjects[i].Position.xy += Delta; // constrain position 
+			object.Dx.xy -= Delta; // constrain position 
+			SimulationObjects[i].Dx.xy += Delta; // constrain position 
 
-			object.Velocity.xy += Impulse / object.MassRadius.x;
-			SimulationObjects[i].Velocity.xy += Impulse / SimulationObjects[i].MassRadius.x;
+			object.Dv.xy += Impulse / object.MassRadius.x;
+			SimulationObjects[i].Dv.xy += Impulse / SimulationObjects[i].MassRadius.x;
 		}
 	}
 }
@@ -75,8 +77,8 @@ void ApplyConstraint(inout Object object, float mult) {
 
 	if (Length > ConstrainingRadius) {
 		vec2 RelativeVelocity = object.Velocity - vec2(0.0f); // The constraining sphere remains at rest 
-		object.Position.xy -= -Normal * (ConstrainingRadius - Length) * mult; // constrain position 
-		object.Velocity.xy += -Normal * max(mult * dot(Normal, RelativeVelocity) * CoefficientOfRestitution * min((1.0f / object.MassRadius.x), 1.0f), 0.0f); // impulse only depends on velocity along the normal
+		object.Dx.xy -= -Normal * (ConstrainingRadius - Length) * mult; // constrain position 
+		object.Dv.xy += -Normal * max(mult * dot(Normal, RelativeVelocity) * CoefficientOfRestitution * min((1.0f / object.MassRadius.x), 1.0f), 0.0f); // impulse only depends on velocity along the normal
 	}
 
 }
@@ -98,8 +100,12 @@ void main() {
 	for (int i = 0 ; i < Substeps; i++) {
 
 		Object CurrentObject = SimulationObjects[Index];
-		Object Unupdated = SimulationObjects[Index];
-	
+
+		CurrentObject.Position += CurrentObject.Dx;
+		CurrentObject.Velocity += CurrentObject.Dv;
+		CurrentObject.Dx = vec2(0.0f);
+		CurrentObject.Dv = vec2(0.0f);
+		
 		CurrentObject.Force += CurrentObject.MassRadius.x * G;
 
 		vec2 OldVel = CurrentObject.Velocity;
